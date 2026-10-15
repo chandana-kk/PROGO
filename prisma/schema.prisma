@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         String   @default("USER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile              Profile?
+  skills               UserSkill[]
+  ownedProjects        Project[]           @relation("ProjectOwner")
+  memberships          ProjectMember[]
+  verificationReviews  VerificationRequest[] @relation("VerificationReviewer")
+  verificationEvents   VerificationEvent[]
+  follows              Follow[]            @relation("Follower")
+  followers            Follow[]            @relation("Following")
+  sentConnections      Connection[]        @relation("ConnectionRequester")
+  receivedConnections  Connection[]        @relation("ConnectionAddressee")
+  notifications        Notification[]
+  reports              Report[]            @relation("Reporter")
+  experiences          Experience[]
+  education            Education[]
+  certifications       Certification[]
+  achievements         Achievement[]
+  activities           Activity[]
+  comments             ProjectUpdate[]
+  auditLogs            AuditLog[]
+  companyMemberships   CompanyMember[]
+  universityMemberships UniversityMember[]
+  jobApplications      JobApplication[]
+  sessions             Session[]
+}
+
+model Profile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  fullName             String
+  profilePhoto         String?
+  headline             String?
+  bio                  String?
+  country              String?
+  city                 String?
+  website              String?
+  github               String?
+  linkedin             String?
+  portfolio            String?
+  role                 String?
+  identityVerified     Boolean  @default(false)
+  visibility           String   @default("PUBLIC")
+  onboardingComplete   Boolean  @default(false)
+  onboardingStep       Int      @default(0)
+  availability         String?
+  profileViews         Int      @default(0)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id       String         @id @default(cuid())
+  name     String         @unique
+  users    UserSkill[]
+  projects ProjectSkill[]
+}
+
+model UserSkill {
+  userId  String
+  skillId String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([userId, skillId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  ownerId     String
+  title       String
+  slug        String   @unique
+  description String
+  problem     String?
+  solution    String?
+  category    String
+  status      String   @default("BUILDING")
+  startDate   DateTime?
+  endDate     DateTime?
+  visibility  String   @default("PUBLIC")
+  coverHue    Int      @default(210)
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  companyId   String?
+  universityId String?
+
+  owner        User         @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      ProjectMember[]
+  skills       ProjectSkill[]
+  evidence     ProjectEvidence[]
+  verifications VerificationRequest[]
+  events       VerificationEvent[]
+  updates      ProjectUpdate[]
+  follows      ProjectFollow[]
+  company      Company?     @relation(fields: [companyId], references: [id])
+  university   University?  @relation(fields: [universityId], references: [id])
+  activities   Activity[]
+}
+
+model ProjectMember {
+  id                       String  @id @default(cuid())
+  projectId                String
+  userId                   String
+  role                     String
+  contributionDescription  String
+  contributionStatus       String  @default("PENDING")
+  invited                  Boolean @default(false)
+  project                  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([projectId, userId])
+}
+
+model ProjectSkill {
+  projectId String
+  skillId   String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([projectId, skillId])
+}
+
+model ProjectEvidence {
+  id                 String   @id @default(cuid())
+  projectId          String
+  type               String
+  url                String?
+  title              String
+  description        String?
+  verificationStatus String   @default("SUBMITTED")
+  createdAt          DateTime @default(now())
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  events             VerificationEvent[]
+}
+
+model VerificationRequest {
+  id             String    @id @default(cuid())
+  projectId      String
+  requestedLevel String
+  status         String    @default("PENDING")
+  claims         String?
+  riskNotes      String?
+  submittedAt    DateTime  @default(now())
+  reviewedAt     DateTime?
+  reviewerId     String?
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewer       User?     @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+}
+
+model VerificationEvent {
+  id         String   @id @default(cuid())
+  projectId  String
+  evidenceId String?
+  eventType  String
+  status     String
+  reviewerId String?
+  createdAt  DateTime @default(now())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evidence   ProjectEvidence? @relation(fields: [evidenceId], references: [id])
+  reviewer   User?    @relation(fields: [reviewerId], references: [id])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  @@id([followerId, followingId])
+}
+
+model ProjectFollow {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@id([userId, projectId])
+}
+
+model Connection {
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  requester   User     @relation("ConnectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User     @relation("ConnectionAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  @@unique([requesterId, addresseeId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  content   String
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  targetType  String
+  targetId    String
+  reason      String
+  description String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+}
+
+model Experience {
+  id          String  @id @default(cuid())
+  userId      String
+  company     String
+  role        String
+  startDate   String
+  endDate     String?
+  description String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id         String  @id @default(cuid())
+  userId     String
+  school     String
+  degree     String
+  field      String?
+  startDate  String
+  endDate    String?
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Certification {
+  id       String  @id @default(cuid())
+  userId   String
+  name     String
+  issuer   String
+  date     String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id          String  @id @default(cuid())
+  userId      String
+  title       String
+  issuer      String?
+  date        String?
+  description String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  actorId   String
+  type      String
+  content   String
+  projectId String?
+  createdAt DateTime @default(now())
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectUpdate {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  industry    String
+  location    String
+  website     String?
+  about       String
+  verified    Boolean  @default(false)
+  hue         Int      @default(220)
+  projects    Project[]
+  members     CompanyMember[]
+  jobs        Job[]
+  challenges  Challenge[]
+}
+
+model CompanyMember {
+  companyId String
+  userId    String
+  role      String @default("MEMBER")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([companyId, userId])
+}
+
+model University {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  location    String
+  website     String?
+  about       String
+  verified    Boolean  @default(false)
+  hue         Int      @default(200)
+  departments String?
+  projects    Project[]
+  members     UniversityMember[]
+}
+
+model UniversityMember {
+  universityId String
+  userId       String
+  role         String
+  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([universityId, userId])
+}
+
+model Job {
+  id              String   @id @default(cuid())
+  companyId       String
+  title           String
+  location        String
+  workMode        String
+  experience      String
+  description     String
+  skills          String
+  verificationReq String?
+  projectReq      String?
+  createdAt       DateTime @default(now())
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  applications    JobApplication[]
+}
+
+model JobApplication {
+  id        String   @id @default(cuid())
+  jobId     String
+  userId    String
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([jobId, userId])
+}
+
+model Challenge {
+  id          String  @id @default(cuid())
+  companyId   String
+  title       String
+  description String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  target    String?
+  meta      String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #0b1f3a;
+  --midnight: #071525;
+  --electric: #1b6bff;
+  --electric-hover: #1557d4;
+  --cyan: #0ea5c6;
+  --verified: #0f8a5f;
+  --verified-bg: #e8f7f0;
+  --surface: #ffffff;
+  --canvas: #f4f7fb;
+  --muted: #5b6b80;
+  --line: #e3eaf3;
+  --danger: #b42318;
+  --warning: #b54708;
+  --info: #175cd3;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(11, 31, 58, 0.06), 0 8px 24px rgba(11, 31, 58, 0.06);
+  --shadow-lg: 0 18px 50px rgba(11, 31, 58, 0.12);
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-midnight: var(--midnight);
+  --color-electric: var(--electric);
+  --color-cyan: var(--cyan);
+  --color-verified: var(--verified);
+  --color-canvas: var(--canvas);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: var(--font-geist-sans);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--navy);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--electric);
+  outline-offset: 2px;
+}
+
+.progo-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.cover-wash {
+  background:
+    radial-gradient(120% 80% at 10% 10%, rgba(255, 255, 255, 0.22), transparent 50%),
+    radial-gradient(90% 70% at 90% 80%, rgba(14, 165, 198, 0.28), transparent 45%),
+    linear-gradient(135deg, hsl(var(--hue, 210) 55% 28%) 0%, hsl(calc(var(--hue, 210) + 28) 62% 18%) 100%);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #edf2f7 0%, #f8fafc 50%, #edf2f7 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
